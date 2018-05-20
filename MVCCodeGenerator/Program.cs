@@ -31,7 +31,11 @@ namespace MVCCodeGenerator
                 AssemblyName = "elearning.model",
                 TargetModelName = "CourseChapter",
                 TargetModelNameSpace = "elearning.model.DataModels",
-                ServicesPath = @"C:\Projects\Websites\Personal\itestudy.com\elearning\elearning.services"
+                ServicesPath = @"C:\Projects\Websites\Personal\itestudy.com\elearning\elearning.services",
+                ViewModelPath = @"C:\Projects\Websites\Personal\itestudy.com\elearning\elearning.model\ViewModels",
+                ViewModelProjectPath = @"C:\Projects\Websites\Personal\itestudy.com\elearning\elearning.model",
+                ViewModelProjectName = "elearning.model.csproj",
+                ServicesProjectName = "elearning.services.csproj"
             };
 
             (new EmbeddedCodeGenerator(input)).Run();

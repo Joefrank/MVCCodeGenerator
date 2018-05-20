@@ -26,16 +26,6 @@ namespace MVCCodeGenerator.Utils
 
         public static bool CreateFileOrOverwrite(string path, string content)
         {
-            //using (var fileStream = File.Open(path, FileMode.OpenOrCreate, FileAccess.ReadWrite))
-            //{
-            //    using (StreamWriter sw = new StreamWriter(path, true))
-            //    {
-            //        sw.WriteLine(content);
-            //    }
-            //}
-            //return true;
-
-
             if (File.Exists(path))
             {              
                 File.Delete(path);
@@ -48,6 +38,27 @@ namespace MVCCodeGenerator.Utils
                 // Add some information to the file.
                 fs.Write(info, 0, info.Length);
             }
+            return true;
+        }
+
+        public static bool AppendToFile(string path, string content)
+        {
+            if (!File.Exists(path))
+            {
+                // Create a file to write to.
+                using (StreamWriter sw = File.CreateText(path))
+                {
+                    sw.WriteLine(content);
+                }
+            }
+            else
+            {
+                using (StreamWriter sw = File.AppendText(path))
+                {
+                    sw.WriteLine(content);
+                }
+            }
+
             return true;
         }
     }
