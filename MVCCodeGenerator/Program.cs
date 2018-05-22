@@ -35,7 +35,9 @@ namespace MVCCodeGenerator
                 ViewModelPath = @"C:\Projects\Websites\Personal\itestudy.com\elearning\elearning.model\ViewModels",
                 ViewModelProjectPath = @"C:\Projects\Websites\Personal\itestudy.com\elearning\elearning.model",
                 ViewModelProjectName = "elearning.model.csproj",
-                ServicesProjectName = "elearning.services.csproj"
+                ServicesProjectName = "elearning.services.csproj",
+                ViewsPath = @"C:\Projects\Websites\Personal\itestudy.com\elearning\elearning.admin\Views",
+                PartialFormViewsPath = @"C:\Projects\Websites\Personal\itestudy.com\elearning\elearning.admin\Views\Shared\Forms"
             };
 
             (new EmbeddedCodeGenerator(input)).Run();

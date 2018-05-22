@@ -11,5 +11,7 @@ namespace MVCCodeGenerator.Model
         public string ViewModelPath { get; set; }
         public string ViewModelProjectPath { get; set; }
         public string ViewModelProjectName { get; set; }
+        public string ViewsPath { get; set; }
+        public string PartialFormViewsPath { get; set; }
     }
 }
