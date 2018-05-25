@@ -49,6 +49,7 @@ namespace MVCCodeGenerator
             } 
         }
 
+
         private void BuildControllers()
         {
             var sbModelCode = new StringBuilder(Heading);
@@ -66,6 +67,29 @@ namespace MVCCodeGenerator
                 var projectPath = _input.ControllerProjectPath + ".csproj";
                 AddFileToProject(projectPath, controllerFullPath.Replace(_input.ControllerProjectPath + "\\", ""));
             }
+        }
+
+        private void BuildViews()
+        {
+            var sbTemp = new StringBuilder();
+            var editModelName = _input.TargetModelName + "EditVm";
+            var viewModelName = editModelName + ".cs";
+
+            var createTemplateStr = FileUtils.ReadStringFromFile(_input.ViewsPath + "\\Template\\Create.txt");
+            var editTemplateStr = FileUtils.ReadStringFromFile(_input.ViewsPath + "\\Template\\Details.txt");
+            var listTemplateStr = FileUtils.ReadStringFromFile(_input.ViewsPath + "\\Template\\Index.txt");
+
+            var targetCreateViewPath = _input.ViewsPath + "\\Create.cshtml";
+            var targetEditViewPath = _input.ViewsPath + "\\Details.cshtml";
+            var targetListViewPath = _input.ViewsPath + "\\Index.cshtml";
+
+            var createTemplateCode = createTemplateStr.Replace("[***]", editModelName);
+            var editTemplateCode = editTemplateStr.Replace("[***]", editModelName);
+            var listTemplateCode = listTemplateStr.Replace("[***]", _input.TargetModelName);
+
+
+            var bModelExist = File.Exists(viewModelFullPath);
+            
         }
 
         private void BuildViewModels(Type t)
