@@ -102,8 +102,7 @@ namespace MVCCodeGenerator
 
             if (!bModelExist)
             {
-                var projectPath = _input.ControllerProjectPath + ".csproj";
-                AddFileToProject(projectPath, controllerFullPath.Replace(_input.ControllerProjectPath + "\\", ""));
+                AddFileToProject(_input.ControllerProjectPath + "\\" + _input.ControllerProjectName, controllerFullPath.Replace(_input.ControllerProjectPath + "\\", ""));
             }
         }
 
@@ -117,9 +116,9 @@ namespace MVCCodeGenerator
             var editTemplateStr = FileUtils.ReadStringFromFile(_input.ViewsPath + "\\Template\\Details.txt");
             var listTemplateStr = FileUtils.ReadStringFromFile(_input.ViewsPath + "\\Template\\Index.txt");
 
-            var targetCreateViewPath = _input.ViewsPath + "\\Create.cshtml";
-            var targetEditViewPath = _input.ViewsPath + "\\Details.cshtml";
-            var targetListViewPath = _input.ViewsPath + "\\Index.cshtml";
+            var targetCreateViewPath = _input.ViewsPath + _input.TargetModelName + "\\Create.cshtml";
+            var targetEditViewPath = _input.ViewsPath + _input.TargetModelName + "\\Details.cshtml";
+            var targetListViewPath = _input.ViewsPath + _input.TargetModelName + "\\Index.cshtml";
 
             var createTemplateCode = createTemplateStr.Replace("[***]", editModelName);
             var editTemplateCode = editTemplateStr.Replace("[***]", editModelName);
@@ -131,14 +130,10 @@ namespace MVCCodeGenerator
             var createResult = FileUtils.CreateFileOrOverwrite(targetCreateViewPath, createTemplateCode);
             var editResult = FileUtils.CreateFileOrOverwrite(targetEditViewPath, editTemplateCode);
             var listResult = FileUtils.CreateFileOrOverwrite(targetEditViewPath, listTemplateCode);
-            
-            var p = new Microsoft.Build.Evaluation.Project(_input.ViewsProjectPath);
 
-            if (p.Items.FirstOrDefault(i => i.EvaluatedInclude == targetCreateViewPath) == null) { p.AddItem("Build", targetCreateViewPath);  }
-            if (p.Items.FirstOrDefault(i => i.EvaluatedInclude == targetEditViewPath) == null) { p.AddItem("Build", targetEditViewPath); }
-            if (p.Items.FirstOrDefault(i => i.EvaluatedInclude == targetListViewPath) == null) { p.AddItem("Build", targetListViewPath); }
-
-            p.Save();
+            AddFileToProject(_input.ViewsProjectPath, targetCreateViewPath.Replace(_input.ViewsPath + "\\", "\\Views"));
+            AddFileToProject(_input.ViewsProjectPath, targetEditViewPath.Replace(_input.ViewsPath + "\\", "\\Views"));
+            AddFileToProject(_input.ViewsProjectPath, targetListViewPath.Replace(_input.ViewsPath + "\\", "\\Views"));
 
         }
 

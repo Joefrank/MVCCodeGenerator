@@ -20,6 +20,7 @@ namespace MVCCodeGenerator
                 ServicesProjectName = "elearning.services.csproj",
                 ControllerPath = @"C:\projects\Websites\Personal\itestudy.com\elearning\elearning.admin\Controllers",
                 ControllerProjectPath = @"C:\projects\Websites\Personal\itestudy.com\elearning\elearning.admin",
+                ControllerProjectName = "elearning.admin.csproj",
                 ViewsPath = @"C:\Projects\Websites\Personal\itestudy.com\elearning\elearning.admin\Views",
                 PartialFormViewsPath = @"C:\Projects\Websites\Personal\itestudy.com\elearning\elearning.admin\Views\Shared\Forms",
                 ViewsProjectPath = @"C:\Projects\Websites\Personal\itestudy.com\elearning\elearning.admin\elearning.admin.csproj",
