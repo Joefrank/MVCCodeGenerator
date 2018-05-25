@@ -11,8 +11,10 @@ namespace MVCCodeGenerator
 {
     public class EmbeddedCodeGenerator : ABasicGenerator
     {
-        private InputEmbedded _input;        
-               
+        private InputEmbedded _input;
+        private string _searchFieldsQuery;
+        private string _editFields;
+
         public EmbeddedCodeGenerator(InputEmbedded input)
         {
             _input = input;
@@ -30,14 +32,13 @@ namespace MVCCodeGenerator
 
                 
                 Console.WriteLine(string.Format("Type Found it Class: {0} -- Namespace {1} -- Beginning process.........", type.Name, type.Namespace));
-
+                
+                //build viewmodels
                 BuildViewModels(type);
                 // build services
-                //BuildServices();
-
-                //build viewmodels
-
+                BuildServices();
                 //build controllers
+                BuildControllers();
 
                 //build views              
                        
@@ -48,10 +49,31 @@ namespace MVCCodeGenerator
             } 
         }
 
+        private void BuildControllers()
+        {
+            var sbModelCode = new StringBuilder(Heading);
+            var sbTempAttribs = new StringBuilder();
+            var controllerName = _input.TargetModelName + "Controller.cs";
+            var templateStr = FileUtils.ReadStringFromFile(_input.ControllerPath + "\\TemplateController.txt");
+            var code = templateStr.Replace("[***]", _input.TargetModelName);
+            var controllerFullPath = _input.ControllerPath + "\\" + controllerName;
+
+            var bModelExist = File.Exists(controllerFullPath);
+            FileUtils.CreateFileOrOverwrite(controllerFullPath, sbModelCode.ToString());
+
+            if (!bModelExist)
+            {
+                var projectPath = _input.ControllerProjectPath + ".csproj";
+                AddFileToProject(projectPath, controllerFullPath.Replace(_input.ControllerProjectPath + "\\", ""));
+            }
+        }
+
         private void BuildViewModels(Type t)
         {
             var sbModelCode = new StringBuilder(Heading);
             var sbTemp = new StringBuilder();
+            var sbTempAttribs = new StringBuilder();
+            var sbSearchField = new StringBuilder();
 
             var viewModelName = _input.TargetModelName + "EditVm.cs";
             var templateFileFullPath = _input.ViewModelPath + "\\TemplateEditVm.txt";
@@ -61,17 +83,24 @@ namespace MVCCodeGenerator
             //object obj = Activator.CreateInstance(type);
             var properties = t.GetProperties();
 
-            //build properties
+            //get searchable fields query
+            _searchFieldsQuery = GetSearchableFieldQuery(properties);
+            _editFields = GetAllEditFields(properties, _input.TargetModelName, "model");
 
+            //build EditViewModel properties
             foreach (var prop in properties)
             {
-                if (prop.PropertyType == typeof(string))
-                {
-                    string value = prop.Name;
-                }
+                var key = PropertyIsAcceptable(prop);
 
-                sbTemp.AppendLine(" public " + prop.PropertyType.Name + " " + prop.Name + "{get;set;}");
-                LogAndDisplay("prop => public " + prop.PropertyType.Name + " " + prop.Name + "{get;set;}");
+                if(string.IsNullOrEmpty(key))  continue;
+
+                var propReturn = string.Empty;
+                var propTypeName = prop.PropertyType.Name;
+                var attribs = GetPropertyAttributes(prop);                
+
+                sbTemp.Append(attribs);
+                sbTemp.AppendLine(" public " + key + " " + prop.Name + "{get;set;}");
+                LogAndDisplay("prop => public " + key + " " + prop.Name + "{get;set;}");
             }
 
             //*** inject using/import statements from source data file
@@ -87,6 +116,8 @@ namespace MVCCodeGenerator
                 AddFileToProject(projectPath, viewModelFullPath.Replace(_input.ViewModelProjectPath + "\\", ""));
             }
         }
+
+        
 
         private void BuildServices()
         {
@@ -107,7 +138,9 @@ namespace MVCCodeGenerator
             var bImplementationExist = File.Exists(newImplementaitonFullPath);
 
             sbInterface.Replace("[***]", _input.TargetModelName);
-            sbImplementation.Replace("[***]", _input.TargetModelName);
+            sbImplementation.Replace("[***]", _input.TargetModelName)
+                .Replace("[***SearchQuery***]", _searchFieldsQuery)
+                .Replace("[***AllEdit***]", _editFields);
 
             //back-up destination files if they exists
             //log all file activities
@@ -123,13 +156,13 @@ namespace MVCCodeGenerator
             Console.WriteLine(newInterfaceFullPath);
             Console.WriteLine(newImplementaitonFullPath);
 
-            //check/make sure that items have been added to project
+            //check/make sure that items have been added to project (check for double entry in project)
             if (!bInterfaceExist || !bImplementationExist)
             {
                 var projectPath = _input.ServicesPath + "\\" + _input.ServicesProjectName;
-
-                AddFileToProject(projectPath, newInterfaceFullPath.Replace(_input.ServicesProjectName + "\\", ""));
-                AddFileToProject(projectPath, newImplementaitonFullPath.Replace(_input.ServicesProjectName + "\\", ""));
+                var p = new Microsoft.Build.Evaluation.Project(projectPath);
+                AddFileToProject(p, newInterfaceFullPath.Replace(_input.ServicesProjectName + "\\", ""));
+                AddFileToProject(p, newImplementaitonFullPath.Replace(_input.ServicesProjectName + "\\", ""));
             }
 
         }
@@ -141,6 +174,14 @@ namespace MVCCodeGenerator
             var p = new Microsoft.Build.Evaluation.Project(projectPath);
             p.AddItem("Compile", filePath);
             p.Save();
+        }
+
+        private void AddFileToProject(Microsoft.Build.Evaluation.Project project, string filePath)
+        {
+            LogAndDisplay("Adding new files to project: " + project.DirectoryPath + Environment.NewLine + filePath);
+
+            project.AddItem("Compile", filePath);
+            project.Save();
         }
     }
 }
