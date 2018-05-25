@@ -4,6 +4,7 @@ using MVCCodeGenerator.Utils;
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Reflection;
 using System.Text;
 
@@ -14,14 +15,18 @@ namespace MVCCodeGenerator
         private InputEmbedded _input;
         private string _searchFieldsQuery;
         private string _editFields;
+        private Dictionary<string, string> _mappingModels;
 
         public EmbeddedCodeGenerator(InputEmbedded input)
         {
             _input = input;
+            _mappingModels = new Dictionary<string, string>();
         }
 
         public void Run()
         {
+            LogAndDisplay("Code generation started at " + DateTime.Now);
+
             Assembly assembly = Assembly.Load(_input.AssemblyName);           
 
             foreach (Type type in assembly.GetTypes())
@@ -39,16 +44,49 @@ namespace MVCCodeGenerator
                 BuildServices();
                 //build controllers
                 BuildControllers();
-
                 //build views              
-                       
-                // inject
+                BuildViews();
+                //inject
+                DoAllInjections();
+                //do mappings
+                string s = string.Join(";", _mappingModels.Select(x => string.Format("CreateMap<{0}, {1}>()", x.Key , x.Value)).ToArray());
+                DoAllMappings(s);
 
-            //do mappings
-
+                LogAndDisplay("Code generation completed at " + DateTime.Now);
             } 
         }
 
+        private void DoAllInjections()
+        {
+            LogAndDisplay("Starting all injections");
+
+            var searchString = @"/***Dependency_Injection***/";
+            var content = FileUtils.ReadStringFromFile(_input.ContainerInjectionPath);
+                      
+            //mainly services injection.
+            var injectionString = string.Format("builder.RegisterType<{0}>().As<I{0}>();", _input.TargetModelName + "Service.cs");
+            var code = content.Replace(searchString, injectionString);
+
+            FileUtils.CreateFileOrOverwrite(_input.ContainerInjectionPath, code);
+
+            LogAndDisplay("Injections completed " + injectionString);
+        }
+
+        private void DoAllMappings(string mappingString)
+        {
+            LogAndDisplay("Starting all mappings");
+
+            var searchString = @"/***Mapping_Injection***/";
+            var content = FileUtils.ReadStringFromFile(_input.MappingProfilePath);
+
+            //CreateMap<Article, EditArticleVm>()
+            //var injectionString = string.Format("CreateMap<{0}, {1}>();", _input.TargetModelName );
+            var code = content.Replace(searchString, Environment.NewLine +  mappingString + Environment.NewLine + searchString);
+
+            FileUtils.CreateFileOrOverwrite(_input.ContainerInjectionPath, code);
+
+            LogAndDisplay("Mapping completed " + mappingString);
+        }
 
         private void BuildControllers()
         {
@@ -88,8 +126,20 @@ namespace MVCCodeGenerator
             var listTemplateCode = listTemplateStr.Replace("[***]", _input.TargetModelName);
 
 
-            var bModelExist = File.Exists(viewModelFullPath);
+            //var bModelExist = File.Exists(viewModelFullPath);
+
+            var createResult = FileUtils.CreateFileOrOverwrite(targetCreateViewPath, createTemplateCode);
+            var editResult = FileUtils.CreateFileOrOverwrite(targetEditViewPath, editTemplateCode);
+            var listResult = FileUtils.CreateFileOrOverwrite(targetEditViewPath, listTemplateCode);
             
+            var p = new Microsoft.Build.Evaluation.Project(_input.ViewsProjectPath);
+
+            if (p.Items.FirstOrDefault(i => i.EvaluatedInclude == targetCreateViewPath) == null) { p.AddItem("Build", targetCreateViewPath);  }
+            if (p.Items.FirstOrDefault(i => i.EvaluatedInclude == targetEditViewPath) == null) { p.AddItem("Build", targetEditViewPath); }
+            if (p.Items.FirstOrDefault(i => i.EvaluatedInclude == targetListViewPath) == null) { p.AddItem("Build", targetListViewPath); }
+
+            p.Save();
+
         }
 
         private void BuildViewModels(Type t)
@@ -106,6 +156,10 @@ namespace MVCCodeGenerator
 
             //object obj = Activator.CreateInstance(type);
             var properties = t.GetProperties();
+
+            //this is for later mappings
+            _mappingModels.Add(_input.TargetModelName, _input.TargetModelName + "EditVm");
+            _mappingModels.Add(_input.TargetModelName + "EditVm", _input.TargetModelName);
 
             //get searchable fields query
             _searchFieldsQuery = GetSearchableFieldQuery(properties);
@@ -139,9 +193,7 @@ namespace MVCCodeGenerator
                 var projectPath = _input.ViewModelProjectPath + "\\" + _input.ViewModelProjectName;
                 AddFileToProject(projectPath, viewModelFullPath.Replace(_input.ViewModelProjectPath + "\\", ""));
             }
-        }
-
-        
+        }              
 
         private void BuildServices()
         {

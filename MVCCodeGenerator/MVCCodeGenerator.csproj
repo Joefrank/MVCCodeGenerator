@@ -116,6 +116,7 @@
     <Compile Include="CodeGenerator.cs" />
     <Compile Include="EmbeddedCodeGenerator.cs" />
     <Compile Include="Enums\AttributeEditLevel.cs" />
+    <Compile Include="Model\CreateFileResult.cs" />
     <Compile Include="Model\InputEmbedded.cs" />
     <Compile Include="Model\InputStruct.cs" />
     <Compile Include="Program.cs" />
