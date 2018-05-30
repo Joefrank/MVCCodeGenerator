@@ -42,6 +42,12 @@ namespace MVCCodeGenerator.Utils
                 {
                     File.Delete(path);
                 }
+                else
+                {
+                    //let's make sure directory exist first
+                    var dir = new FileInfo(path).Directory.FullName;
+                    Directory.CreateDirectory(dir);
+                }
 
                 // Create the file.
                 using (FileStream fs = File.Create(path))

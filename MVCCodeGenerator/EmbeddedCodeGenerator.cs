@@ -49,7 +49,8 @@ namespace MVCCodeGenerator
                 //inject
                 DoAllInjections();
                 //do mappings
-                string s = string.Join(";", _mappingModels.Select(x => string.Format("CreateMap<{0}, {1}>()", x.Key , x.Value)).ToArray());
+                string s = string.Join(";" + Environment.NewLine, _mappingModels.Select(x => 
+                    string.Format("CreateMap<{0}, {1}>()", x.Key , x.Value)).ToArray()) + (_mappingModels.Count > 1? ";" + Environment.NewLine : "");
                 DoAllMappings(s);
 
                 LogAndDisplay("Code generation completed at " + DateTime.Now);
@@ -65,7 +66,14 @@ namespace MVCCodeGenerator
                       
             //mainly services injection.
             var injectionString = string.Format("builder.RegisterType<{0}>().As<I{0}>();", _input.TargetModelName + "Service.cs");
-            var code = content.Replace(searchString, injectionString);
+
+            if (content.Contains(injectionString))
+            {
+                LogAndDisplay("Type already registered " + injectionString);
+                return;
+            }
+
+            var code = content.Replace(searchString, Environment.NewLine + injectionString + Environment.NewLine + searchString);           
 
             FileUtils.CreateFileOrOverwrite(_input.ContainerInjectionPath, code);
 
@@ -79,11 +87,15 @@ namespace MVCCodeGenerator
             var searchString = @"/***Mapping_Injection***/";
             var content = FileUtils.ReadStringFromFile(_input.MappingProfilePath);
 
-            //CreateMap<Article, EditArticleVm>()
-            //var injectionString = string.Format("CreateMap<{0}, {1}>();", _input.TargetModelName );
+            if (content.Contains(mappingString))
+            {
+                LogAndDisplay("Type already registered " + mappingString);
+                return;
+            }
+
             var code = content.Replace(searchString, Environment.NewLine +  mappingString + Environment.NewLine + searchString);
 
-            FileUtils.CreateFileOrOverwrite(_input.ContainerInjectionPath, code);
+            FileUtils.CreateFileOrOverwrite(_input.MappingProfilePath, code);
 
             LogAndDisplay("Mapping completed " + mappingString);
         }
@@ -96,6 +108,7 @@ namespace MVCCodeGenerator
             var templateStr = FileUtils.ReadStringFromFile(_input.ControllerPath + "\\TemplateController.txt");
             var code = templateStr.Replace("[***]", _input.TargetModelName);
             var controllerFullPath = _input.ControllerPath + "\\" + controllerName;
+            sbModelCode.AppendLine(code);
 
             var bModelExist = File.Exists(controllerFullPath);
             FileUtils.CreateFileOrOverwrite(controllerFullPath, sbModelCode.ToString());
@@ -116,20 +129,20 @@ namespace MVCCodeGenerator
             var editTemplateStr = FileUtils.ReadStringFromFile(_input.ViewsPath + "\\Template\\Details.txt");
             var listTemplateStr = FileUtils.ReadStringFromFile(_input.ViewsPath + "\\Template\\Index.txt");
 
-            var targetCreateViewPath = _input.ViewsPath + _input.TargetModelName + "\\Create.cshtml";
-            var targetEditViewPath = _input.ViewsPath + _input.TargetModelName + "\\Details.cshtml";
-            var targetListViewPath = _input.ViewsPath + _input.TargetModelName + "\\Index.cshtml";
+            var targetCreateViewPath = _input.ViewsPath + "\\" + _input.TargetModelName + "\\Create.cshtml";
+            var targetEditViewPath = _input.ViewsPath + "\\" + _input.TargetModelName + "\\Details.cshtml";
+            var targetListViewPath = _input.ViewsPath + "\\" + _input.TargetModelName + "\\Index.cshtml";
 
-            var createTemplateCode = createTemplateStr.Replace("[***]", editModelName);
-            var editTemplateCode = editTemplateStr.Replace("[***]", editModelName);
+            var createTemplateCode = createTemplateStr.Replace("[***]", editModelName).Replace("[***Model***]", _input.TargetModelName);
+            var editTemplateCode = editTemplateStr.Replace("[***]", editModelName).Replace("[***Model***]", _input.TargetModelName);
             var listTemplateCode = listTemplateStr.Replace("[***]", _input.TargetModelName);
 
 
             //var bModelExist = File.Exists(viewModelFullPath);
-
+           
             var createResult = FileUtils.CreateFileOrOverwrite(targetCreateViewPath, createTemplateCode);
             var editResult = FileUtils.CreateFileOrOverwrite(targetEditViewPath, editTemplateCode);
-            var listResult = FileUtils.CreateFileOrOverwrite(targetEditViewPath, listTemplateCode);
+            var listResult = FileUtils.CreateFileOrOverwrite(targetListViewPath, listTemplateCode);
 
             AddFileToProject(_input.ViewsProjectPath, targetCreateViewPath.Replace(_input.ViewsPath + "\\", "\\Views"));
             AddFileToProject(_input.ViewsProjectPath, targetEditViewPath.Replace(_input.ViewsPath + "\\", "\\Views"));
@@ -240,19 +253,35 @@ namespace MVCCodeGenerator
 
         private void AddFileToProject(string projectPath, string filePath)
         {
-           LogAndDisplay("Adding new files to project: " + projectPath + Environment.NewLine + filePath);
+            try
+            {
+                LogAndDisplay("Adding new files to project: " + projectPath + Environment.NewLine + filePath);
 
-            var p = new Microsoft.Build.Evaluation.Project(projectPath);
-            p.AddItem("Compile", filePath);
-            p.Save();
+                var p = new Microsoft.Build.Evaluation.Project(projectPath);
+                p.AddItem("Compile", filePath);
+                p.Save();
+            }
+            catch(Exception ex)
+            {
+                LogAndDisplay("Failed to add file to project:" + Environment.NewLine + projectPath + Environment.NewLine + filePath);
+                LogError(ex.Message);
+            }
         }
 
         private void AddFileToProject(Microsoft.Build.Evaluation.Project project, string filePath)
         {
-            LogAndDisplay("Adding new files to project: " + project.DirectoryPath + Environment.NewLine + filePath);
+            try
+            {
+                LogAndDisplay("Adding new files to project: " + project.DirectoryPath + Environment.NewLine + filePath);
 
-            project.AddItem("Compile", filePath);
-            project.Save();
-        }
+                project.AddItem("Compile", filePath);
+                project.Save();
+            }
+            catch(Exception ex)
+            {
+                LogAndDisplay("Failed to add file to project:" + Environment.NewLine + project.DirectoryPath + Environment.NewLine + filePath);
+                LogError(ex.Message);
+            }
+}
     }
 }

@@ -11,6 +11,7 @@ namespace MVCCodeGenerator
     public abstract class ABasicGenerator
     {
         private string _logFilePath;
+        private string _erroFilePath;
         private string _header = @"
         /*****************************************************************
         * Code Generated at {0}
@@ -60,19 +61,9 @@ namespace MVCCodeGenerator
 
         public ABasicGenerator()
         {
-            _logFilePath = ConfigurationManager.AppSettings["logpath"] + "\\" + DateTime.Now.ToString("dd-MM-YYYY") + ".txt";
-        }
-
-        public virtual void LogItem(string message)
-        {
-            FileUtils.AppendToFile(_logFilePath, message);
-        }
-
-        public virtual void LogAndDisplay(string message)
-        {
-            FileUtils.AppendToFile(_logFilePath, message);
-            Console.WriteLine(message);
-        }
+            _logFilePath = ConfigurationManager.AppSettings["logpath"] + "\\" + DateTime.Now.ToString("dd-MM-yyyy") + ".txt";
+            _erroFilePath = ConfigurationManager.AppSettings["logpath"] + "\\Error_" + DateTime.Now.ToString("dd-MM-yyyy") + ".txt";
+        }       
 
         public Dictionary<string, object> GetPropertyAttributeList(PropertyInfo property)
         {
@@ -195,6 +186,32 @@ namespace MVCCodeGenerator
             var entry = AcceptableVmProperties.FirstOrDefault(x => x.Value == info.PropertyType);
             return entry.Key; // AcceptableVmProperties.Contains(info.PropertyType);
         }
-        
+
+        #region log stuff
+
+        public virtual void LogItem(string message)
+        {
+            FileUtils.AppendToFile(_logFilePath, message);
+        }
+
+        public virtual void LogAndDisplay(string message)
+        {
+            FileUtils.AppendToFile(_logFilePath, message);
+            Console.WriteLine(message);
+        }
+
+        public virtual void LogError(string errorMessage)
+        {
+            FileUtils.AppendToFile(_erroFilePath, errorMessage);
+        }
+
+        public virtual void LogAndDisplayError(string errorMessage)
+        {
+            FileUtils.AppendToFile(_erroFilePath, errorMessage);
+            Console.WriteLine(errorMessage);
+        }
+
+        #endregion
+
     }
 }
