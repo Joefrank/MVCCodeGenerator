@@ -65,7 +65,7 @@ namespace MVCCodeGenerator
             var content = FileUtils.ReadStringFromFile(_input.ContainerInjectionPath);
                       
             //mainly services injection.
-            var injectionString = string.Format("builder.RegisterType<{0}>().As<I{0}>();", _input.TargetModelName + "Service.cs");
+            var injectionString = string.Format("builder.RegisterType<{0}>().As<I{0}>();", _input.TargetModelName + "Service");
 
             if (content.Contains(injectionString))
             {
